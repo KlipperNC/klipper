@@ -1530,6 +1530,28 @@ Support for gcode arc (G2/G3) commands.
 #   1mm.
 ```
 
+### [grbl]
+
+Support for additional gcodes associated with the GRBL cnc command
+language.
+
+List of additionally supported g-codes in grbl v1.1:
+  - Non-Modal Commands: G10L2, G53
+  - Motion Modes: G2, G3
+  - Plane Select Modes: G17, G18, G19
+  - Coordinate System Modes: G54, G55, G56, G57, G58, G59
+
+```
+[grbl]
+#work_offsets: standard
+#  Enables 6 coordinate offset systems. Options are
+#  `standard` (default) or `none`.
+#arcs: true
+#  Enables support for the gcode arc commands. Defaults
+#  to true. Resolution can be set by including the
+#  `[gcode_arcs]` section.
+```
+
 ### [respond]
 
 Enable the "M118" and "RESPOND" extended
