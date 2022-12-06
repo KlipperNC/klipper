@@ -1,0 +1,11 @@
+# Tests for work offset commands G10, G53, G54-59
+DICTIONARY atmega2560.dict
+CONFIG probe_target.cfg
+
+
+G28
+G90
+
+G54
+
+G38.2 X-10 F100 P8
