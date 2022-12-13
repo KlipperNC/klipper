@@ -1,35 +1,84 @@
 
 from homing import HomingMove
 
-# virtual mcu for probing a virtual endstop
+
+class MCUBase:
+    '''
+        All MCU's must implement these functions (use ABC for python 3.x)
+    '''
+    def get_mcu(self):
+        raise NotImplemented
+    def add_stepper(self):
+        raise NotImplemented
+    def get_steppers(self):
+        raise NotImplemented
+    def home_start(self):
+        raise NotImplemented
+    def home_wait(self):
+        raise NotImplemented
+    def query_endstop(self):
+        raise NotImplemented
+
+
+
+
+
+
 
 # do we create this MCU once when the commands are registered?
 # do we create it once we need it with the associated direction of the probing?
 #    probably only want to create and register this "virtual" mcu once so there aren't many of them floating around each time the command is executed
 #    if this is the case, we'll want to be able to move in xyz and therefore need to add all steppers as active ones
-class ProbeMCU:
-    def __init__(self, printer, pin_params):
-        # Create an "endstop" object to handle the probe pin
-        mcu = pin_params['chip']
 
-        # what kind of object is this mcu endstop?
-        self.mcu_endstop = mcu.setup_pin('endstop', pin_params)
+
+
+
+class ProbeMCU(MCUBase):
+    '''
+        There is a 1-to-1 relationship between stepper motor and endstop. In order to stop a stepper motor based on an
+        input, we need to create virtual MCU that ties and existing stepper motor to a new trigger pin.
+
+        pin.Pin contains a reference to its physical MCU (`chip`) and we use this to create a new pin for our endstop
+
+        event `klippy:mcu_identify` to reuse stepper objects from physical MCUs.
+    '''
+    def __init__(self, printer, pin_params):
+        '''
+            printer : printer.Printer
+            mcu : klippy.MCU
+        '''
+
+        self.printer = printer
+
+        # our probe pin is a new endstop for an existing stepper motor
+        self._mcu = pin_params['chip'].setup_pin('endstop', pin_params)
 
         printer.register_event_handler('klippy:mcu_identify', self._handle_mcu_identify)
 
-        # Wrappers
-        self.get_mcu = self.mcu_endstop.get_mcu
-        self.add_stepper = self.mcu_endstop.add_stepper
-        self.get_steppers = self.mcu_endstop.get_steppers
-        self.home_start = self.mcu_endstop.home_start
-        self.home_wait = self.mcu_endstop.home_wait
-        self.query_endstop = self.mcu_endstop.query_endstop
+    def get_mcu(self):
+        return self._mcu.get_mcu()
+
+    def add_steppers(self):
+        return self._mcu.add_stepper()
+
+    def get_stepper(self):
+        return self._mcu.get_steppers()
+
+    def home_start(self):
+        return self._mcu.home_start()
+
+    def home_wait(self):
+        return self._mcu.home_wait()
+
+    def query_endstop(self):
+        return self._mcu.query_endstop()
 
     # when this new "mcu" is identified, find the stepper and add it as if this mcu owned it
     def _handle_mcu_identify(self):
         kin = self.printer.lookup_object('toolhead').get_kinematics()
         for stepper in kin.get_steppers():
             if stepper.is_active_axis(self.axis):
+                # registers a stepper
                 self.add_stepper(stepper)
 
 
